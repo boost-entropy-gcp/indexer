@@ -169,7 +169,7 @@ export class Indexer {
             node: string
             health: string
           }) => {
-            return status.node !== 'removed' && status.health !== 'failed'
+            return status.node !== 'removed' && status.health == 'healthy'
           },
         )
         .map((status: { subgraphDeployment: string; node: string }) => {
