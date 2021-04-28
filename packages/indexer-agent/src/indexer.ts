@@ -142,6 +142,46 @@ export class Indexer {
     }
   }
 
+  async healthySubgraphDeployments(): Promise<SubgraphDeploymentID[]> {
+    try {
+      const result = await this.statuses
+        .query(
+          gql`
+            {
+              indexingStatuses {
+                subgraphDeployment: subgraph
+                node
+                health
+              }
+            }
+          `,
+        )
+        .toPromise()
+
+      if (result.error) {
+        throw result.error
+      }
+
+      return result.data.indexingStatuses
+        .filter(
+          (status: {
+            subgraphDeployment: string
+            node: string
+            health: string
+          }) => {
+            return status.node !== 'removed' && status.health !== 'failed'
+          },
+        )
+        .map((status: { subgraphDeployment: string; node: string }) => {
+          return new SubgraphDeploymentID(status.subgraphDeployment)
+        })
+    } catch (error) {
+      const err = indexerError(IndexerErrorCode.IE018, error)
+      this.logger.error(`Failed to query indexing status API`, { err })
+      throw err
+    }
+  }
+
   async proofOfIndexing(
     deployment: SubgraphDeploymentID,
     block: EthereumBlock,
